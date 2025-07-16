@@ -4,6 +4,63 @@ export default function Admin() {
   const [nomeEvento, setNomeEvento] = useState('');
   const [mensagem, setMensagem] = useState('');
 
+  async function adicionarMarcaDAgua(file: File): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject('Erro ao obter contexto do canvas');
+
+          ctx.drawImage(img, 0, 0);
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+          ctx.shadowBlur = 4;
+
+          const primitiveFontSize = Math.floor(canvas.width / 8);
+          const subFontSize = Math.floor(canvas.width / 25);
+
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+
+          ctx.font = `bolder ${primitiveFontSize}px Arial`;
+          ctx.fillText('PRIMITIVE', centerX, centerY - subFontSize);
+
+          ctx.font = `normal ${subFontSize}px Arial`;
+          ctx.fillText('Produções audiovisuais', centerX, centerY + primitiveFontSize * 0.3);
+
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) return reject('Erro ao criar Blob da imagem');
+              const fileComMarca = new File([blob], file.name, { type: 'image/jpeg' });
+              resolve(fileComMarca);
+            },
+            'image/jpeg',
+            0.95
+          );
+        };
+
+        img.onerror = () => reject('Erro ao carregar imagem');
+        img.src = e.target?.result as string;
+      };
+
+      reader.onerror = () => reject('Erro ao ler arquivo');
+      reader.readAsDataURL(file);
+    });
+  }
+
   const handleUpload = async () => {
     const input = document.getElementById('input-fotos') as HTMLInputElement | null;
 
@@ -26,31 +83,48 @@ export default function Admin() {
 
     setMensagem('Enviando fotos...');
 
-    for (let i = 0; i < files.length; i++) {
-      const foto = files[i];
-      const caminho = `public/${nomeEvento}/${foto.name}`;
-      console.log(`🖼️ Enviando: ${foto.name}`);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const fotoOriginal = files[i];
+        console.log(`🖼️ Processando: ${fotoOriginal.name}`);
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'x-nome-arquivo': caminho,
-        },
-        body: foto,
-      });
+        // 1. Enviar a original para o bucket privado "pagas"
+        const caminhoOriginal = `${nomeEvento}/${fotoOriginal.name}`;
+        const resOriginal = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'x-nome-arquivo': caminhoOriginal,
+            'x-bucket': 'pagas',
+          },
+          body: fotoOriginal,
+        });
 
-      const resposta = await res.text();
-      console.log('🟢 Resposta status:', res.status);
-      console.log('🟢 Resposta texto:', resposta);
+        if (!resOriginal.ok) {
+          throw new Error(`Erro ao enviar original: ${resOriginal.statusText}`);
+        }
 
-      if (!res.ok) {
-        setMensagem(`Erro ao enviar: ${res.status} - ${res.statusText}`);
-        return;
+        // 2. Adicionar marca d'água e enviar para o bucket público "fotos"
+        const fotoComMarca = await adicionarMarcaDAgua(fotoOriginal);
+        const caminhoPublico = `public/${nomeEvento}/${fotoComMarca.name}`;
+        const resComMarca = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'x-nome-arquivo': caminhoPublico,
+          },
+          body: fotoComMarca,
+        });
+
+        if (!resComMarca.ok) {
+          throw new Error(`Erro ao enviar com marca: ${resComMarca.statusText}`);
+        }
       }
-    }
 
-    input.value = '';
-    setMensagem('Upload concluído com sucesso!');
+      input.value = '';
+      setMensagem('Upload concluído com sucesso!');
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      setMensagem('Erro ao processar as imagens. Veja o console.');
+    }
   };
 
   return (
@@ -67,12 +141,7 @@ export default function Admin() {
           className="w-full p-3 rounded text-black"
         />
 
-        <input
-          id="input-fotos" // ✅ ESSENCIAL para que o JS consiga acessar os arquivos
-          type="file"
-          multiple
-          className="w-full"
-        />
+        <input id="input-fotos" type="file" multiple className="w-full" />
 
         <button
           onClick={handleUpload}

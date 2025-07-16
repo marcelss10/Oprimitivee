@@ -20,7 +20,7 @@ function buffer(req: NextApiRequest): Promise<Buffer> {
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE!
+  process.env.SUPABASE_SERVICE_ROLE! // ⚠️ Service Role é necessário para escrever em bucket privado
 );
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -29,6 +29,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const nomeArquivo = req.headers['x-nome-arquivo'] as string;
+  const bucket = (req.headers['x-bucket'] as string) || 'fotos'; // default para 'fotos'
+
   if (!nomeArquivo) {
     return res.status(400).json({ error: 'Nome do arquivo não informado' });
   }
@@ -37,9 +39,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const fileBuffer = await buffer(req);
 
     const { data, error } = await supabase.storage
-      .from('fotos')
+      .from(bucket)
       .upload(nomeArquivo, fileBuffer, {
-        contentType: 'image/jpeg', // ajuste conforme necessário
+        contentType: 'image/jpeg',
         upsert: true,
       });
 
