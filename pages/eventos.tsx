@@ -112,7 +112,7 @@ export default function Eventos() {
                         className="bg-blue-600 text-white text-sm px-3 py-1 rounded shadow"
                         title="Baixar com marca d'água"
                       >
-                        Baixar
+                        
                       </button>
                       <button
                         onClick={() => redirecionarPagamento(foto.nome)}
