@@ -106,22 +106,23 @@ export default function Eventos() {
                       alt={foto.nome}
                       className="rounded shadow-md w-full h-auto"
                     />
-                    <div className="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => baixarComMarca(foto.url, foto.nome)}
-                        className="bg-blue-600 text-white text-sm px-3 py-1 rounded shadow"
-                        title="Baixar com marca d'água"
-                      >
-                        
-                      </button>
-                      <button
-                        onClick={() => redirecionarPagamento(foto.nome)}
-                        className="bg-green-600 text-white text-sm px-3 py-1 rounded shadow"
-                        title="Baixar versão original (após pagamento)"
-                      >
-                        Baixar Original
-                      </button>
-                    </div>
+                  <div className="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => baixarComMarca(foto.url, foto.nome)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded shadow"
+                    title="Baixar com marca d'água"
+                  >
+                    Baixar Gratuito
+                  </button>
+                  <button
+                    onClick={() => redirecionarPagamento(foto.nome)}
+                    className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded shadow"
+                    title="Baixar versão original (após pagamento)"
+                  >
+                    Baixar Original
+                  </button>
+                </div>
+
                   </div>
                 ))}
               </div>

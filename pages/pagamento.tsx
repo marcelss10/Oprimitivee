@@ -2,7 +2,7 @@ import { useRouter } from 'next/router';
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 
-// Importa QRCodeSVG dinamicamente sem tipos extras
+// Importa QRCodeSVG dinamicamente sem SSR
 const QRCodeSVG = dynamic(() =>
   import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
 
@@ -25,7 +25,7 @@ export default function Pagamento() {
 
     try {
       const res = await fetch(
-        `/api/downloadOriginal?evento=${encodeURIComponent(evento)}&foto=${encodeURIComponent(foto)}`
+        `/api/downloadoriginal?evento=${encodeURIComponent(evento)}&foto=${encodeURIComponent(foto)}`
       );
 
       if (!res.ok) throw new Error('Erro ao obter foto original');
@@ -35,7 +35,7 @@ export default function Pagamento() {
 
       const link = document.createElement('a');
       link.href = url;
-      link.download = foto;
+      link.download = foto!;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -50,15 +50,14 @@ export default function Pagamento() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-blue-900 text-white flex flex-col items-center justify-center p-10">
-      <h1 className="text-3xl font-bold mb-6">Pagamento para baixar foto original</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">Pagamento para baixar foto original</h1>
 
       <p className="mb-4 text-center">
         Evento: <strong>{evento}</strong><br />
         Foto: <strong>{foto}</strong>
       </p>
 
-      <div className="mb-8 text-center">
-        <p className="mb-2">Escaneie o QR Code abaixo para simular o pagamento via PIX:</p>
+      <div className="flex flex-col items-center space-y-4 mb-6">
         <QRCodeSVG
           value={`00020126580014BR.GOV.BCB.PIX0136${chavePix}52040000530398654051005802***6304`}
           size={180}
@@ -67,7 +66,7 @@ export default function Pagamento() {
           level="H"
           includeMargin
         />
-        <p className="mt-3 select-all font-mono bg-white text-black inline-block p-2 rounded">
+        <p className="select-all font-mono bg-white text-black inline-block p-2 rounded">
           {chavePix}
         </p>
       </div>
@@ -75,7 +74,7 @@ export default function Pagamento() {
       <button
         onClick={handleSimularPagamento}
         disabled={baixando || pagou}
-        className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded font-semibold shadow"
+        className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded font-semibold shadow disabled:opacity-50"
       >
         {baixando ? 'Processando...' : pagou ? 'Download liberado!' : 'Simular pagamento e baixar'}
       </button>
